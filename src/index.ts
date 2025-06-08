@@ -1,53 +1,81 @@
-// src/index.ts
 import { fetchFigmaNode } from './figma'
-import { generateIR, generateCode } from './ai'
+import { generateContext } from './context'
+import { generateCode, TargetFramework } from './codegen'
+import 'dotenv/config'
 import * as fs from 'fs'
 import * as path from 'path'
 
-async function main() {
-  const fileKey = process.env.FIGMA_FILE_KEY!
-  const nodeId = process.env.FIGMA_NODE_ID!
+// --- 主流程函数 ---
+
+async function runD2CPipeline() {
+  console.log('🚀 --- D2C引擎MVP启动 --- 🚀')
+
+  const startTime = Date.now()
+
+  // 1. 从.env文件中获取配置
+  const fileKey = process.env.FIGMA_FILE_KEY
+  const nodeId = process.env.FIGMA_TEST_NODE_ID
 
   if (!fileKey || !nodeId) {
     console.error(
-      'Please provide FIGMA_FILE_KEY and FIGMA_NODE_ID in your .env file.'
+      '❌ 错误: 请确保在 .env 文件中定义了 FIGMA_FILE_KEY 和 FIGMA_TEST_NODE_ID'
     )
     return
   }
 
+  // 准备输出目录
+  const outputDir = path.resolve(__dirname, '../output')
+  if (!fs.existsSync(outputDir)) {
+    fs.mkdirSync(outputDir)
+  }
+
   try {
-    // 步骤1: 从Figma获取原始数据
-    const figmaData = await fetchFigmaNode(fileKey, nodeId)
+    // --- 步骤 1: 获取Figma原始数据 ---
+    console.log(fileKey, nodeId)
+    const figmaNodeData = await fetchFigmaNode(fileKey, nodeId)
     fs.writeFileSync(
-      'output-figma-raw.json',
-      JSON.stringify(figmaData, null, 2)
+      path.join(outputDir, 'figma-raw-output.json'),
+      JSON.stringify(figmaNodeData, null, 2)
     )
-    console.log('Saved raw Figma data to output-figma-raw.json')
+    console.log('✅ 步骤 1/3: 成功获取Figma数据并保存。')
 
-    // 步骤2: AI生成IR
-    const componentIR = await generateIR(figmaData)
+    // --- 步骤 2: 生成Context.json IR ---
+    const context = await generateContext(figmaNodeData)
     fs.writeFileSync(
-      'output-component-ir.json',
-      JSON.stringify(componentIR, null, 2)
+      path.join(outputDir, 'context-output.json'),
+      JSON.stringify(context, null, 2)
     )
-    console.log('Saved component IR to output-component-ir.json')
+    console.log('✅ 步骤 2/3: 成功生成Context.json IR并保存。')
 
-    // 步骤3: AI生成代码
-    const reactCode = await generateCode(componentIR)
-    const componentName = componentIR.componentName || 'MyComponent'
-    const outputDir = path.resolve(__dirname, '../components')
-    if (!fs.existsSync(outputDir)) {
-      fs.mkdirSync(outputDir)
+    // --- 步骤 3: 生成目标代码 (可以同时生成多种框架) ---
+    const targets: TargetFramework[] = ['React', 'Vue']
+
+    for (const target of targets) {
+      const code = await generateCode(context, target)
+      const fileExtension = target === 'React' ? 'tsx' : 'vue'
+      const componentName = context.root?.name || 'MyComponent'
+      const outputFilePath = path.join(
+        outputDir,
+        `${componentName}.${target}.${fileExtension}`
+      )
+
+      fs.writeFileSync(outputFilePath, code)
+      console.log(
+        `✅ 步骤 3/3 [${target}]: 成功生成组件代码并保存至 ${outputFilePath}`
+      )
     }
-    fs.writeFileSync(path.join(outputDir, `${componentName}.tsx`), reactCode)
-    console.log(
-      `Successfully generated component and saved to components/${componentName}.tsx`
-    )
 
-    console.log('\n✅ D2C pipeline finished successfully!')
+    const duration = (Date.now() - startTime) / 1000
+    console.log(
+      `\n🎉 --- D2C流程全部完成！耗时: ${duration.toFixed(2)}s --- 🎉`
+    )
+    console.log(`所有产物已保存在 \`${outputDir}\` 文件夹中。`)
   } catch (error) {
-    console.error('\n❌ D2C pipeline failed:', error)
+    const duration = (Date.now() - startTime) / 1000
+    console.error(`\n❌ --- D2C流程在 ${duration.toFixed(2)}s 后中断 --- ❌`)
+    console.error('错误详情:', (error as Error).message)
   }
 }
 
-main()
+// --- 运行主流程 ---
+runD2CPipeline()

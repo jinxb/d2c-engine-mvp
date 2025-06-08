@@ -1,0 +1,40 @@
+/* CONTEXT.JSON V1.1 SPECIFICATION */
+This document defines the structure of the Intermediate Representation (IR). You MUST strictly follow this specification.
+
+## Root Structure
+- schema: { name: "ContextIR", version: "1.1" } (object) - Describes the specification itself.
+- metadata: (GlobalMetadataObject, optional) - Contains information about the generation task.
+- definitions: (DefinitionsObject, optional) - Contains reusable definitions like styles.
+- root: (ComponentNodeObject) - The root node of the UI tree.
+
+## ComponentNodeObject
+- type: (string, required) - Semantic component type, e.g., "Frame", "Button", "Text".
+- id: (string, required) - The original node ID from Figma.
+- name: (string, optional) - The original layer name from Figma, for debugging.
+- props: (PropsObject, optional) - An object containing all properties for this node.
+- children: (ComponentNodeObject[], optional) - An array of child nodes.
+
+## PropsObject
+- content: (string, optional) - Text content for Text nodes, or alt text for Image nodes.
+- source: (SourceInfoObject, optional) - Describes a media resource.
+- style: (StyleObject, optional) - All styling information for the node.
+- interaction: (InteractionObject[], optional) - Defines user interactions.
+- metadata: (NodeMetadataObject, optional) - Contains all "meta" information about the node.
+- ...other custom props like 'placeholder' or 'checked'.
+
+## StyleObject
+Contains categorized styling properties:
+- class: (string | string[]) - Reference to a class in `definitions.styles`.
+- layout: (object) - Flexbox properties like `display`, `flexDirection`, `gap`, `padding`.
+- visual: (object) - Visual properties like `backgroundColor`, `opacity`, `borderRadius`, `borderWidth`.
+- typography: (object) - Text properties like `color`, `fontSize`, `fontWeight`, `textAlign`.
+- positioning: (object) - Positional properties like `position`, `top`, `left`, `zIndex`.
+- transform: (TransformObject[])
+- effects: (EffectObject[])
+
+## NodeMetadataObject
+Contains namespaced "data about data":
+- figma: (object) - Raw information from Figma, like `nodeType` and `rect`.
+- vi: (object) - Information from Visual Intelligence models, like `componentHint` and `confidence`.
+- semantic: (object) - Information from Semantic/Multimodal models, like `description`.
+- tokens: (object) - A map from a style path to a design token path. Example: `"visual.backgroundColor": "color.brand.primary"`.
