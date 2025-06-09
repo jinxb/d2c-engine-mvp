@@ -33,6 +33,9 @@ interface FigmaNodesResponse {
 // 这是一种良好的实践，可以集中管理API的基础URL和认证头。
 const figmaApi: AxiosInstance = axios.create({
   baseURL: 'https://api.figma.com/v1',
+  headers: {
+    'X-Figma-Token': process.env.FIGMA_TOKEN,
+  },
 })
 
 // --- 3. 核心函数：fetchFigmaNode ---
@@ -65,17 +68,11 @@ export async function fetchFigmaNode(
 
   try {
     // -- 发送API请求 --
-    // 我们使用 `get<FigmaNodesResponse>` 来告诉TypeScript响应的数据类型。
-    console.log(`[DEBUG] 即将使用的Figma Token是: ${process.env.FIGMA_TOKEN}`)
-    console.log('[DEBUG] Axios实例的默认Headers是:', figmaApi.defaults.headers)
     const response = await figmaApi.get<FigmaNodesResponse>(
       `/files/${fileKey}/nodes`,
       {
         params: {
           ids: nodeId,
-        },
-        headers: {
-          'X-Figma-Token': process.env.FIGMA_TOKEN,
         },
       }
     )

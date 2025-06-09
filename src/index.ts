@@ -41,10 +41,7 @@ async function runD2CPipeline() {
 
     // --- 步骤 2: 生成Context.json IR ---
     const context = await generateContext(figmaNodeData)
-    fs.writeFileSync(
-      path.join(outputDir, 'context-output.json'),
-      JSON.stringify(context, null, 2)
-    )
+    fs.writeFileSync(path.join(outputDir, 'context-output.json'), context)
     console.log('✅ 步骤 2/3: 成功生成Context.json IR并保存。')
 
     // --- 步骤 3: 生成目标代码 (可以同时生成多种框架) ---

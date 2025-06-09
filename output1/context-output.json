@@ -1,0 +1,208 @@
+{
+  "schema": {
+    "name": "ContextIR",
+    "version": "1.1"
+  },
+  "root": {
+    "type": "Frame",
+    "id": "1:375",
+    "name": "个人中心",
+    "props": {
+      "style": {
+        "layout": {
+          "display": "flex",
+          "flexDirection": "column",
+          "gap": "80px",
+          "padding": "0px"
+        },
+        "visual": {
+          "backgroundColor": "color.ui.background"
+        }
+      }
+    },
+    "children": [
+      {
+        "type": "Frame",
+        "id": "1:376",
+        "name": "菜单栏",
+        "props": {
+          "style": {
+            "layout": {
+              "display": "flex",
+              "flexDirection": "column",
+              "gap": "80px",
+              "padding": "0px"
+            },
+            "visual": {
+              "backgroundColor": "color.ui.background"
+            }
+          }
+        },
+        "children": [
+          {
+            "type": "Frame",
+            "id": "1:414",
+            "name": "我的医生",
+            "props": {
+              "style": {
+                "layout": {
+                  "display": "flex",
+                  "flexDirection": "row",
+                  "gap": "38px",
+                  "padding": "0px"
+                },
+                "visual": {
+                  "backgroundColor": "color.ui.background"
+                }
+              }
+            }
+          },
+          {
+            "type": "Frame",
+            "id": "1:424",
+            "name": "病例窗口",
+            "props": {
+              "style": {
+                "layout": {
+                  "display": "flex",
+                  "flexDirection": "row",
+                  "gap": "38px",
+                  "padding": "0px"
+                },
+                "visual": {
+                  "backgroundColor": "color.ui.background"
+                }
+              }
+            }
+          },
+          {
+            "type": "Frame",
+            "id": "1:434",
+            "name": "我的钱包",
+            "props": {
+              "style": {
+                "layout": {
+                  "display": "flex",
+                  "flexDirection": "row",
+                  "gap": "38px",
+                  "padding": "0px"
+                },
+                "visual": {
+                  "backgroundColor": "color.ui.background"
+                }
+              }
+            }
+          },
+          {
+            "type": "Frame",
+            "id": "1:444",
+            "name": "隐私政策",
+            "props": {
+              "style": {
+                "layout": {
+                  "display": "flex",
+                  "flexDirection": "row",
+                  "gap": "38px",
+                  "padding": "0px"
+                },
+                "visual": {
+                  "backgroundColor": "color.ui.background"
+                }
+              }
+            }
+          },
+          {
+            "type": "Frame",
+            "id": "1:453",
+            "name": "帮助",
+            "props": {
+              "style": {
+                "layout": {
+                  "display": "flex",
+                  "flexDirection": "row",
+                  "gap": "38px",
+                  "padding": "0px"
+                },
+                "visual": {
+                  "backgroundColor": "color.ui.background"
+                }
+              }
+            }
+          },
+          {
+            "type": "Frame",
+            "id": "1:462",
+            "name": "设置",
+            "props": {
+              "style": {
+                "layout": {
+                  "display": "flex",
+                  "flexDirection": "row",
+                  "gap": "38px",
+                  "padding": "0px"
+                },
+                "visual": {
+                  "backgroundColor": "color.ui.background"
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "type": "Frame",
+        "id": "1:398",
+        "name": "背景",
+        "props": {
+          "style": {
+            "layout": {
+              "display": "flex",
+              "flexDirection": "column",
+              "gap": "0px",
+              "padding": "0px"
+            },
+            "visual": {
+              "backgroundColor": "color.ui.background"
+            }
+          }
+        }
+      },
+      {
+        "type": "Frame",
+        "id": "1:405",
+        "name": "头像",
+        "props": {
+          "style": {
+            "layout": {
+              "display": "flex",
+              "flexDirection": "row",
+              "gap": "90px",
+              "padding": "0px"
+            },
+            "visual": {
+              "backgroundColor": "color.ui.background"
+            }
+          }
+        }
+      },
+      {
+        "type": "Frame",
+        "id": "1:413",
+        "name": "列表",
+        "props": {
+          "style": {
+            "layout": {
+              "display": "flex",
+              "flexDirection": "column",
+              "gap": "80px",
+              "padding": "0px"
+            },
+            "visual": {
+              "backgroundColor": "color.ui.background"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

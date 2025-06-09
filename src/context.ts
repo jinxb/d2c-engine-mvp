@@ -93,7 +93,7 @@ ${JSON.stringify(figmaNodeData, null, 2)}
 
     console.log('[AI] 成功生成Context.json IR。')
     // 解析AI返回的JSON字符串
-    return JSON.parse(jsonString)
+    return jsonString
   } catch (error) {
     console.error('[AI] 生成Context.json时发生错误:', error)
     throw new Error(

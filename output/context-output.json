@@ -1,0 +1,244 @@
+{
+  "schema": {
+    "name": "ContextIR",
+    "version": "1.1"
+  },
+  "root": {
+    "type": "Frame",
+    "id": "2:707",
+    "name": "Profile Edit",
+    "props": {
+      "style": {
+        "layout": {
+          "display": "flex",
+          "flexDirection": "column",
+          "padding": "0px"
+        },
+        "visual": {
+          "backgroundColor": "color.ui.background"
+        }
+      }
+    },
+    "children": [
+      {
+        "type": "Rectangle",
+        "id": "2:708",
+        "name": "Rectangle 45",
+        "props": {
+          "style": {
+            "layout": {
+              "position": "absolute",
+              "top": "0px",
+              "left": "0px",
+              "width": "390px",
+              "height": "188px"
+            },
+            "visual": {
+              "backgroundColor": "color.brand.secondary"
+            }
+          }
+        }
+      },
+      {
+        "type": "Text",
+        "id": "2:715",
+        "name": "Username",
+        "props": {
+          "content": "Username",
+          "style": {
+            "typography": {
+              "color": "color.text.primary",
+              "fontSize": "typography.size.base",
+              "fontWeight": "typography.weight.medium"
+            },
+            "layout": {
+              "position": "absolute",
+              "top": "298px",
+              "left": "89px"
+            }
+          }
+        }
+      },
+      {
+        "type": "Text",
+        "id": "2:716",
+        "name": "Edit Profile",
+        "props": {
+          "content": "Edit Profile",
+          "style": {
+            "typography": {
+              "color": "color.text.on-brand",
+              "fontSize": "typography.size.sm",
+              "fontWeight": "typography.weight.normal"
+            },
+            "layout": {
+              "position": "absolute",
+              "top": "54px",
+              "left": "208px"
+            }
+          }
+        }
+      },
+      {
+        "type": "Text",
+        "id": "2:718",
+        "name": "Email I’d",
+        "props": {
+          "content": "Email I’d",
+          "style": {
+            "typography": {
+              "color": "color.text.primary",
+              "fontSize": "typography.size.base",
+              "fontWeight": "typography.weight.medium"
+            },
+            "layout": {
+              "position": "absolute",
+              "top": "362px",
+              "left": "89px"
+            }
+          }
+        }
+      },
+      {
+        "type": "Text",
+        "id": "2:719",
+        "name": "Phone Number",
+        "props": {
+          "content": "Phone Number",
+          "style": {
+            "typography": {
+              "color": "color.text.primary",
+              "fontSize": "typography.size.base",
+              "fontWeight": "typography.weight.medium"
+            },
+            "layout": {
+              "position": "absolute",
+              "top": "441px",
+              "left": "89px"
+            }
+          }
+        }
+      },
+      {
+        "type": "Text",
+        "id": "2:720",
+        "name": "Password",
+        "props": {
+          "content": "Password",
+          "style": {
+            "typography": {
+              "color": "color.text.primary",
+              "fontSize": "typography.size.base",
+              "fontWeight": "typography.weight.medium"
+            },
+            "layout": {
+              "position": "absolute",
+              "top": "526px",
+              "left": "89px"
+            }
+          }
+        }
+      },
+      {
+        "type": "Text",
+        "id": "2:722",
+        "name": "Update",
+        "props": {
+          "content": "Update",
+          "style": {
+            "typography": {
+              "color": "color.text.on-brand",
+              "fontSize": "typography.size.lg",
+              "fontWeight": "typography.weight.bold"
+            },
+            "layout": {
+              "position": "absolute",
+              "top": "745px",
+              "left": "220px"
+            }
+          }
+        }
+      },
+      {
+        "type": "Text",
+        "id": "2:724",
+        "name": "Change Picture",
+        "props": {
+          "content": "Change Picture",
+          "style": {
+            "typography": {
+              "color": "color.text.primary",
+              "fontSize": "typography.size.sm",
+              "fontWeight": "typography.weight.normal"
+            },
+            "layout": {
+              "position": "absolute",
+              "top": "259px",
+              "left": "202px"
+            }
+          }
+        }
+      },
+      {
+        "type": "Text",
+        "id": "2:725",
+        "name": "yanchui@gmail.com",
+        "props": {
+          "content": "yanchui@gmail.com",
+          "style": {
+            "typography": {
+              "color": "color.text.primary",
+              "fontSize": "typography.size.sm",
+              "fontWeight": "typography.weight.normal"
+            },
+            "layout": {
+              "position": "absolute",
+              "top": "395px",
+              "left": "101px"
+            }
+          }
+        }
+      },
+      {
+        "type": "Text",
+        "id": "2:726",
+        "name": "+14987889999",
+        "props": {
+          "content": "+14987889999",
+          "style": {
+            "typography": {
+              "color": "color.text.primary",
+              "fontSize": "typography.size.sm",
+              "fontWeight": "typography.weight.normal"
+            },
+            "layout": {
+              "position": "absolute",
+              "top": "478px",
+              "left": "101px"
+            }
+          }
+        }
+      },
+      {
+        "type": "Text",
+        "id": "2:727",
+        "name": "evFTbyVVCd",
+        "props": {
+          "content": "evFTbyVVCd",
+          "style": {
+            "typography": {
+              "color": "color.text.primary",
+              "fontSize": "typography.size.sm",
+              "fontWeight": "typography.weight.normal"
+            },
+            "layout": {
+              "position": "absolute",
+              "top": "560px",
+              "left": "101px"
+            }
+          }
+        }
+      }
+    ]
+  }
+}
