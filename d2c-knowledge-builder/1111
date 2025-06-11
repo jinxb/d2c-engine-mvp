@@ -1,0 +1,1822 @@
+我们目前的流程如下：
+1、figma插件将选定的 Figma Node (Frame, Component, Instance, Page) 递归解析，生成一个描述 UI 结构、样式、内容的中间态 DSL (JSON 格式)，并提取图标和图片资源，最后拿到这样一段信息：
+获取dsl数据、prompt 数据、 reds-h5-next 组件文档和组件截图，识别图片内容并执行prompt生成对应组件：
+http://vibe.devops.sit.xiaohongshu.com
+/apps/bolt/adjustment_dsl?
+id=17494724694873393.json&
+stack=ReactNative&
+mode=component&
+type=code&
+imageUrl=https://fe-bolt.xhscdn.com/figma/1041047831igrn7ar4c0644k1klmeco0007v8bdd2r9e7g&componentName=reds-rn-next
+过程中根据图片识别组件，完成组件开发，根据dsl调整布局和样式并参考 reds-rn-next 组件文档 完成组件替换
+2、cursor编辑器，安装mcp工具，这个mcp工具会解析上面链接，从接口提取prompt、DSL信息json数据、图片信息。
+
+目前是验证阶段，所以用的cursor，然后我先将figma插件的核心js文件发给你了解。
+插件核心代码如下：
+ok。
+这是manifest.json：
+{
+  "name": "Vibe",
+  "id": "1235418064627905536",
+  "api": "1.0.0",
+  "main": "core.iife.js",
+  "capabilities": ["inspect"],
+  "enableProposedApi": false,
+  "documentAccess": "dynamic-page",
+  "editorType": ["figma", "dev"],
+  "ui": "index.html",
+  "networkAccess": {
+    "allowedDomains": ["*"],
+    "reasoning": "本地开发使用"
+  }
+}
+
+这是core.iife.js：
+
+(function() {
+  "use strict";
+  function isEmptyValue(value) {
+    return value === null || value === void 0 || value === 0 || Array.isArray(value) && value.length === 0 || typeof value === "string" && value.trim() === "" || isPlainObject(value) && Object.keys(value).length === 0;
+  }
+  function isPlainObject(value) {
+    if (typeof value !== "object" || value === null) return false;
+    const proto = Object.getPrototypeOf(value);
+    return proto === Object.prototype || proto === null;
+  }
+  function removeEmptyFields(obj) {
+    const result = {};
+    Object.keys(obj).forEach((key) => {
+      const value = obj[key];
+      if (!isEmptyValue(value)) {
+        if (isPlainObject(value)) {
+          const cleanObj = removeEmptyFields(value);
+          if (Object.keys(cleanObj).length > 0) {
+            result[key] = cleanObj;
+          }
+        } else {
+          result[key] = value;
+        }
+      }
+    });
+    return result;
+  }
+  const STATIC_COMPONENT_MAP = {
+    // 双列商卡
+    双列商卡: "FeedsCard",
+    // 优惠券
+    券: "Coupon",
+    优惠券: "Coupon",
+    优惠券卡片: "Coupon",
+    优惠券卡: "Coupon"
+  };
+  const ICON_NAME_LIST = [
+    "NotePymkC",
+    "ContactBlueC",
+    "CapaEdittextEdit",
+    "BanCatagory",
+    "VideoBrandC",
+    "OfflineEntitiesB",
+    "FullScreenOffC",
+    "MessageKeyboard",
+    "FlowFree",
+    "SameVideoF",
+    "JoingroupC",
+    "Drafts",
+    "FlashOnB",
+    "AccountFeedbackB",
+    "DescendingM",
+    "CloseF",
+    "LoadFail",
+    "MusicB",
+    "CapaLiveWeiboBlackC",
+    "CollectedF",
+    "CouponSlantB",
+    "DeleteBackB",
+    "MessageStrangerC",
+    "CapaEditSliderOriginalC",
+    "CreatorChipsC",
+    "DownloadBlackC",
+    "SoundOffB",
+    "CreatorB",
+    "CapaEditBeautyYuanyanC",
+    "ShareWechatC",
+    "AuditCompletedF",
+    "LivephotoF",
+    "GiftB",
+    "CloseSB",
+    "Activitycenter",
+    "FiltersSB",
+    "StoreAsThumbDownWhiteFilledC",
+    "QuestionMark",
+    "ArrowCircleRight",
+    "ShareQqC",
+    "CapaExtractsoundEdit",
+    "AccountAppealB",
+    "SearchComplaintWhiteC",
+    "ProductWishlistC",
+    "VideofeedHotC",
+    "ShareMoreSendC",
+    "StoreDetailAddGreyDisableCD",
+    "ProductXhxC",
+    "NnsDrawC",
+    "FunctionsC",
+    "ShareB",
+    "ForbidB",
+    "Refresh",
+    "StoreLogSearchWhiteStrokeC",
+    "StatisticsSB",
+    "CapaEditBeautyKaiyanjiaoC",
+    "CreatorStatisticC",
+    "CapaMirrorEdit",
+    "MessageB",
+    "TagSearch",
+    "VoiceLoadingTagF",
+    "StoreDetailAddGreyC",
+    "Add",
+    "CapaEditBeautyFaceLiftC",
+    "StencilSF",
+    "ChatGroupCircleDeleteC",
+    "MentionB",
+    "StoreLogDoneRedC",
+    "Activity",
+    "KeyboardDownB",
+    "OriginB",
+    "ChatSendingF",
+    "DeepthinkB",
+    "LikeB",
+    "PictureB",
+    "StoreB",
+    "CapaLiveForbidWhiteStrokeC",
+    "ShareWhiteCD",
+    "EnterpriseFunctionC",
+    "StyleB",
+    "StickersCollectC",
+    "AmentiesWifi",
+    "CapaSpinB",
+    "FaqReturnC",
+    "OriginatorLiveC",
+    "SoundOnB",
+    "StoreLogOrderRedC",
+    "ShareLongGraphWhiteStrokeC",
+    "StoreLogUploadRedC",
+    "StoreAsAssistantC",
+    "BookingB",
+    "LiveOverallF",
+    "ChatS",
+    "DraftsB",
+    "MessageFlowedC",
+    "AmentiesStyle",
+    "StoreDetailLocationGreyC",
+    "VideoB",
+    "VideotabCollectedC",
+    "NoteBrandC",
+    "StoreLogAirportSlantWhiteStrokeCD",
+    "MoreS",
+    "UnclaimedGoodsF",
+    "MeB",
+    "GenuineIdentificationRedC",
+    "MessageVoice",
+    "TagSF",
+    "MomentsCircleF",
+    "AddM",
+    "CompilationsManagementC",
+    "CapaChallengeEdit",
+    "CapaEditBeautyBuffingC",
+    "AmentiesCleaning",
+    "CapaEditLocationWhiteC",
+    "CreatorIdentificationC",
+    "VideotabShareC",
+    "MomentsF",
+    "ZoomB",
+    "StatisticsB",
+    "StoreLogExpressDistributionRedC",
+    "CameraF",
+    "ShareCancelAttentionWhiteStrokeC",
+    "BackToTopB",
+    "Mention",
+    "StoreLogPortWhiteStrokeCD",
+    "ShareWhiteC",
+    "ChatSharedboardF",
+    "NoteFriendsC",
+    "XianchangF",
+    "EmojiCollection",
+    "SignalError",
+    "FansAscendingB",
+    "StoreAsRedC",
+    "NoteAppealB",
+    "Withdraw",
+    "BackRigntSB",
+    "CapaEditEffectRoundC",
+    "DanmakuOnC",
+    "VideoBookingC",
+    "ScanB",
+    "ShareLinkWhiteStrokeC",
+    "CreatorGoodsC",
+    "CheckInB",
+    "CapaLiveWatchC",
+    "ExposureB",
+    "MenuB",
+    "SettingSB",
+    "MessagesShieldedF",
+    "ShareWeiboC",
+    "FirmConversionC",
+    "RowSingleNew",
+    "ServiceF",
+    "OrdersAppealB",
+    "CheckCircleNorC",
+    "StoreasThumbDownWhiteFilledYellowC",
+    "MiniAppF",
+    "StoreAsThumbUpWhiteC",
+    "CustomerServiceB",
+    "FansAscending",
+    "FireF",
+    "View",
+    "SearchComplaintWhiteCD",
+    "StoreDetailCustomsGreyC",
+    "PhoneB",
+    "AmentiesChildren",
+    "Camera",
+    "MusicF",
+    "CapaImagetemplateEdit",
+    "PlaySF",
+    "SearchF",
+    "CapaEditPauseBlackC",
+    "RemindF",
+    "CapaEditBeautyShouxiabaC",
+    "AssistantB",
+    "Course",
+    "FaqGoodsC",
+    "CapaLiveWechatRedC",
+    "ShareQrCodeWhiteStrokeCD",
+    "HomeworkF",
+    "Cancle",
+    "Coupon",
+    "ImageSearchB",
+    "GenuineIdentificationBlueCD",
+    "Preorder",
+    "GoodsB",
+    "ScreenFilledSB",
+    "CapaTapEdit",
+    "ChatroomInvitedC",
+    "StoreAsFunnelC",
+    "SendError",
+    "ShareNewB",
+    "RedBagF",
+    "GoodthingsB",
+    "FaqLogisticsC",
+    "StencilF",
+    "TransmitF",
+    "ChatroomFollowCD",
+    "CapaEditPauseWhiteC",
+    "Clock",
+    "NoteLiveC",
+    "PinTopF",
+    "DetailsF",
+    "RemixB",
+    "ShareS",
+    "HomeChat",
+    "SearchPicsearch",
+    "FlowFreeB",
+    "Earth",
+    "VideotabCommentC",
+    "AmentiesOthers",
+    "MessagePictureWhiteStrokeCD",
+    "CameraB",
+    "MovieSF",
+    "Picture34B",
+    "SearchArrowBackWhiteCD",
+    "CartC",
+    "SendmessagesC",
+    "FansDescendingB",
+    "GenuineIdentificationBlueOutlineC",
+    "QqSpaceF",
+    "FullScreenOnC",
+    "StoreDetailEarthRedC",
+    "NoteView",
+    "StepB",
+    "HeartXhxUncheckedCD",
+    "AmentiesParking",
+    "CapaEditBeautyHongchunC",
+    "HeartXhxUncheckedC",
+    "GroupchatF",
+    "NoteTagAllC",
+    "Preview2C",
+    "StyleF",
+    "StoreF",
+    "NoteEngage",
+    "SizeB",
+    "VideoRotateS",
+    "CapaMaskEdit",
+    "Done",
+    "GoodsTagF",
+    "NoteB",
+    "VoiceF",
+    "ArrowDownCenterB",
+    "StoreLogServiceGreyC",
+    "BanAuthorB",
+    "SwitchB",
+    "TopPicksB",
+    "Feedback",
+    "FunnelF",
+    "StoreS",
+    "CapaEditEffectSquareC",
+    "HomeF",
+    "NoteWeeklyreportsB",
+    "CreatorFansC",
+    "ChatCopyF",
+    "StoreDetailAddGreyCD",
+    "VideoEditB",
+    "VideoF",
+    "VideoRecallB",
+    "ChatroomInvitedCD",
+    "MemberCard",
+    "MinusC",
+    "MovieCircleF",
+    "DeleteSB",
+    "CapaLiveTimeC",
+    "EveryoneC",
+    "MessageNotificationC",
+    "NoteTopB",
+    "ShareCancelAttentionWhiteStrokeCD",
+    "ExclamationMarks",
+    "MessageVoiceSentM",
+    "NoteOverview",
+    "GoodsUnclaimed",
+    "Transshipment",
+    "VideotabLikeC",
+    "MessageKeyboardWhiteStrokeC",
+    "DoneSB",
+    "Groupchat",
+    "AmentiesBusiness",
+    "SectionSB",
+    "SettingsF",
+    "CapaEditEffectPullC",
+    "RowSingleSB",
+    "LocationSmallS",
+    "MessageSB",
+    "Filtrate",
+    "TravelArrangements",
+    "VideoCouponC",
+    "CancelAttentionB",
+    "GenuineIdentificationBlueOutlineCD",
+    "SignB",
+    "Reminded",
+    "CapaEditBeautyYanjingjiaoduC",
+    "CapaImagetemplate",
+    "FaqEquityC",
+    "StoreLogLocaitonWhiteStrokeCD",
+    "MentionS",
+    "RightsProtectionM",
+    "NnsLeadsC",
+    "CapaEditFlipWhiteC",
+    "BeautifulB",
+    "CapaEditGoodWhiteC",
+    "QqCircleF",
+    "ReplyManagementC",
+    "PortF",
+    "SubtitleB",
+    "BannerCloseC",
+    "AdLowQuality",
+    "StoreDetailOverseasF",
+    "AddEmoji",
+    "CapaEditPlayBlackC",
+    "IndicatorVideoBlackC",
+    "MentionCircleF",
+    "AuditingF",
+    "RowDoubleNew",
+    "VideoMusicC",
+    "CapaPictureinpictureEdit",
+    "VideotabLikedC",
+    "EnterpriseAccountC",
+    "NncoinC",
+    "ChatroomFollowC",
+    "LiveBeautifyS",
+    "PhoneF",
+    "SketchCollect",
+    "Countdown3sSB",
+    "DoneMiniM",
+    "EnterpriseGiftC",
+    "SearchScreenB",
+    "Chat",
+    "CapaEditBeautyCemianlongbiC",
+    "CapaEditBeautyChunxingC",
+    "FansPersona",
+    "CapaEditSliderPullC",
+    "CheckedCircleC",
+    "AudioOff",
+    "FirmReleaseC",
+    "Uninterested",
+    "CapaSoundeffectEdit",
+    "CampusC",
+    "GiftF",
+    "AmentiesMedia",
+    "Official",
+    "AuditFailF",
+    "DoneCircle",
+    "BrandTagF",
+    "VideoLikeC",
+    "FlashAutoSB",
+    "BackToTop",
+    "GoodsF",
+    "StoreDetailWarehouseRedC",
+    "CapaLiveQqSpaceBlackC",
+    "Luckybag",
+    "MikeF",
+    "SoundOffSB",
+    "ProductHotC",
+    "StoreAsThumbUpWhiteFilledC",
+    "History",
+    "QqF",
+    "Brand",
+    "GoodsS",
+    "NoteNearbyC",
+    "ScreenFilled",
+    "Dislike",
+    "ChatSB",
+    "CancelAttention",
+    "CapaAdd",
+    "CapaMinusSectionC",
+    "NotificationF",
+    "NnsStepC",
+    "QqSpaceCircleF",
+    "UpF",
+    "CapaUpsidedownEdit",
+    "MoreSB",
+    "LongGraphB",
+    "BackCenterB",
+    "AdministratorCancelB",
+    "GroupchatB",
+    "CloseCircle",
+    "MemoryF",
+    "CapaEditBeautyNarrowFaceC",
+    "AlbumB",
+    "EffectsHomepage",
+    "FlipSB",
+    "CapaEditParticularC",
+    "CapaEditSliderSquareWhiteC",
+    "LiveF",
+    "CapaEditBeautyEtouC",
+    "LivephotoOffF",
+    "RemixF",
+    "ScreenNormal",
+    "SearchRecommendC",
+    "CapaEditEffectInsertRightC",
+    "StoreChat",
+    "FilterC",
+    "StoreLogOrderWhiteStrokeC",
+    "ToolsC",
+    "MemberCardB",
+    "StoreLogTransshipmentWhiteStrokeCD",
+    "TVB",
+    "AutoAddedframe",
+    "CapaEditBeautyHeiyanquanC",
+    "ArrowUpM",
+    "PauseSF",
+    "SearchArrowBackWhiteC",
+    "VideoCollectC",
+    "CapaEditSliderInsertRightC",
+    "WeiboF",
+    "WechatPayF",
+    "NoteCollectedC",
+    "FaqLiveC",
+    "Search",
+    "ArrowDownCenterSB",
+    "MessagesOpenF",
+    "ScreenFilledS",
+    "UploadF",
+    "CreatorNoteC",
+    "KickOutB",
+    "CapaEditEffectInsertDownC",
+    "CapaLiveShiftBlackC",
+    "Wallet",
+    "Topic",
+    "Coin",
+    "MessageServiceC",
+    "AudioOn",
+    "CapaLiveBeautyBlackC",
+    "ShareQrCodeWhiteStrokeC",
+    "ChatQuoteF",
+    "StoreLogGreyC",
+    "NnsActivityC",
+    "FaqPrivacyC",
+    "HomeworkB",
+    "AmentiesCatering",
+    "StickerSF",
+    "FlashAutoB",
+    "CapaEditEffectInsertUpC",
+    "ChatGroupCircleAddC",
+    "Copy",
+    "CapaEditSliderTransitionC",
+    "FlashOffB",
+    "ThumbUp",
+    "WechatCircleF",
+    "StatisticsC",
+    "GenuineF",
+    "ProfileChatB",
+    "SectionB",
+    "FaqPaymentC",
+    "AddCart",
+    "CapaEditRotateWhiteC",
+    "ArrowRightRightM",
+    "ExclamationMarksF",
+    "TopF",
+    "ThumbUpF",
+    "SucceedC",
+    "EnterpriseFansC",
+    "EnterpriseStoreLocationC",
+    "RightF",
+    "GenuineIdentificationBlueC",
+    "WechatF",
+    "VideoLongB",
+    "AmentiesReception",
+    "CollectSB",
+    "FaqVideoCouponRedC",
+    "CheckInF",
+    "StatusSecret",
+    "StoreDetailWarehouseF",
+    "FaqIntroductionC",
+    "CutB",
+    "FaqAccountC",
+    "FilmTagF",
+    "CapaEditEffectGlareC",
+    "SettingB",
+    "CapaRecoverEdit",
+    "KickOutWhiteStrokeCD",
+    "BadgeM",
+    "BookingF",
+    "StoreLogTransshipmentWhiteStrokeC",
+    "LogisticsAbroad",
+    "FolderF",
+    "DeleteBackSB",
+    "CapaEditSliderInsertDownC",
+    "SalesReturnB",
+    "StoreLogPortRedC",
+    "WarehouseDeliveryF",
+    "NoteLocationC",
+    "CapaEditBeautyEyesC",
+    "StoreLogLocaitonWhiteStrokeC",
+    "NoteEngageB",
+    "VideoShareC",
+    "AddCircle",
+    "StoreAsThumbDownWhiteFilledCD",
+    "IndicatorMusicBlackC",
+    "Livephoto",
+    "TagB",
+    "Picture11SB",
+    "StoreLogSettingWhiteStrokeCD",
+    "RowDoubleSB",
+    "WarningWhiteStrokeCD",
+    "GenuineIdentificationRedOutlineCD",
+    "ProductLikeC",
+    "HangUp",
+    "CapaEditMentionWhiteC",
+    "LocationB",
+    "StoreDetailReduceGreyC",
+    "VoiceTagF",
+    "NoteLikedC",
+    "CapaEditDeleteC",
+    "CapaEditTemperatureC",
+    "ChatXiuxiuF",
+    "DeleteBackS",
+    "CompanyB",
+    "HeartXhxHalfC",
+    "Me",
+    "NoteEcologicalOfficerC",
+    "UninterestedB",
+    "LabelShuF",
+    "NoteGiftC",
+    "PlayF",
+    "StoreAsThumbUpWhiteFilledYellowC",
+    "StoreAsRedFilledC",
+    "MessageSendB",
+    "CapaEditBeautyBaiyaC",
+    "StoreDetailReduceGreyCD",
+    "ChatroomCreateCD",
+    "CapaEditBeautyFalingwenC",
+    "StoreAsThumbUpWhiteFilledCD",
+    "Match",
+    "AlbumF",
+    "RowSingleB",
+    "StoreDetailAirportSlantGreyC",
+    "CreatorViolationC",
+    "MessageChatGroupC",
+    "RefreshB",
+    "BeautifulSB",
+    "CapaEditBrandWhiteC",
+    "WishlistB",
+    "Download",
+    "StepF",
+    "BackCenterSB",
+    "CompilationsB",
+    "PauseF",
+    "Picture11B",
+    "ReserveB",
+    "MessageSendSB",
+    "NoteF",
+    "LoadingFaildedF",
+    "Picture",
+    "ChatB",
+    "CapaPublishDraftsGreyC",
+    "ShareLinkWhiteStrokeCD",
+    "PartPrivateB",
+    "StoreDetailCustomsRedC",
+    "StoreLogSearchWhiteStrokeCD",
+    "CapaEditAlbumC",
+    "CapaFreezenEdit",
+    "CreatorVideoC",
+    "AmentiesPublic",
+    "CapaEditMovieWhiteC",
+    "Order",
+    "MoreB",
+    "MeF",
+    "FiltersB",
+    "CapaEditTransitionEffectC",
+    "LoadingM",
+    "CapaEditDeleteBlackC",
+    "TagF",
+    "StoreDetailAirportSlantF",
+    "FlipB",
+    "PaperC",
+    "Link",
+    "BanBrand",
+    "FailedRefreshF",
+    "SoundOnBlackC",
+    "FirmCertificationC",
+    "ReplaceB",
+    "FullScreenFollowC",
+    "OriginatorChipsC",
+    "StrangerF",
+    "CapaEditCutC",
+    "ChatWithdrawF",
+    "MapPositioningBlueC",
+    "ForbidWhiteStrokeCD",
+    "ExpressionB",
+    "ProductNewC",
+    "ToolB",
+    "MemberB",
+    "CapaEditBeautyShouquanguC",
+    "Close",
+    "MessagePictureWhiteStrokeC",
+    "CapaLiveShareBlackC",
+    "CapaEditBeautyYanjuC",
+    "CollectB",
+    "LikedF",
+    "CapaLiveWarningWhiteStrokeC",
+    "CapaLiveWechatBlackC",
+    "OriginatorBrandC",
+    "MessageSend",
+    "ArrowBackB",
+    "ChatroomOrderCD",
+    "StoreDetailReduceGreyDisableCD",
+    "AmentiesAthelete",
+    "AirportSlantF",
+    "StoreAsPictureYellowC",
+    "FaqGiftC",
+    "AmentiesEntertainment",
+    "CapaEditBeautyMeimaohouduC",
+    "NoteTagF",
+    "KeyboardB",
+    "FaqArbitrationC",
+    "TVChangeB",
+    "StoreDetailWarehouseGreyC",
+    "MapPositioningLocationC",
+    "ExpressDistribution",
+    "CapaEditSliderRoundWhiteC",
+    "ShareQqSpaceC",
+    "FlashOff2B",
+    "StorelogLogisticsAbroadWhiteStrokeC",
+    "Woman",
+    "CapaEditCheckedC",
+    "MapLocationDotC",
+    "ScanSearch",
+    "ScreenNormalS",
+    "CollectionDoneB",
+    "LikeS",
+    "CapaEditDeleteWhiteC",
+    "BrandCircleF",
+    "EnterpriseMarketingC",
+    "AddB",
+    "ClockF",
+    "ArrowBackF",
+    "GranularityB",
+    "MessageExpressionWhiteStrokeC",
+    "CapaFadeEdit",
+    "LiveWishS",
+    "Details",
+    "OfflineEntities",
+    "StoreDetailOverseasGreyC",
+    "WarningF",
+    "ShareUninterestedWhiteStrokeC",
+    "FaqOrderC",
+    "InfringementAppealB",
+    "LocationCircleF",
+    "GenuineCloseC",
+    "StoreAsDeleteRedC",
+    "CapaEditBeautyShoubiC",
+    "VideoBenifitsB",
+    "CapaEditContrastC",
+    "CapaLiveQqBlackC",
+    "AmentiesOutdoor",
+    "NoteChoicenessC",
+    "CapaEditSpeedC",
+    "DownloadSB",
+    "Sort",
+    "CapaEditBeautyMeimaoweizhiC",
+    "StickerF",
+    "SearchGoodsRecommendC",
+    "NoteInteraction",
+    "IndicatorVideoFillBlackC",
+    "NnsPropsC",
+    "ChatDeleteF",
+    "RedLogoF",
+    "CapaAdjustEdit",
+    "VideoFiltersF",
+    "CapaDeductEdit",
+    "MessageExpression",
+    "MemoryZeroB",
+    "FillM",
+    "StoreDetailLocationRedC",
+    "TopicB",
+    "AddFriends",
+    "VideoStoreC",
+    "GuidanceF",
+    "FaqReportC",
+    "LiveNoticeB",
+    "BlockF",
+    "EnterpriseCardC",
+    "CapaProtectEdit",
+    "PreviewB",
+    "FansDescending",
+    "CapaEditEffectFlashWhiteC",
+    "ChatGroupbuyingF",
+    "UploadingB",
+    "SearchB",
+    "AirportF",
+    "Cart",
+    "FailC",
+    "CapaEditEffectFlashBlackC",
+    "PrivateB",
+    "CapaEditSliderFlashBlackC",
+    "CapaEditSliderPushC",
+    "Customs",
+    "CapaVideotemplateEdit",
+    "ViewF",
+    "Unfollow",
+    "AdvanceNoticeC",
+    "ProductCartC",
+    "VideoGoodsC",
+    "HeartXhxHalfCD",
+    "BackLeftB",
+    "CapaLiveQqRedC",
+    "CapaCopyEdit",
+    "SupportValueSevenDayB",
+    "StoreAsThumbDownWhiteCD",
+    "ShareLongGraphWhiteStrokeCD",
+    "IdentificationPointF",
+    "StoreDetailEarthGreyC",
+    "Setting",
+    "ManageB",
+    "StoreDetailLocationF",
+    "SettingF",
+    "NoteBlueC",
+    "Statistics",
+    "AddF",
+    "CountdownSB",
+    "ViewClosedF",
+    "VideoFiltersC",
+    "Private",
+    "AccountAppeal",
+    "Home",
+    "Hot",
+    "RowDoubleB",
+    "UndoneCircleRadioC",
+    "LocationSmall",
+    "InfoCircle",
+    "StoreAsOrderC",
+    "ShareUninterestedWhiteStrokeCD",
+    "ChatroomCreateC",
+    "ExpressDistributionF",
+    "PropsF",
+    "GoodsC",
+    "ChatAIF",
+    "NoticeF",
+    "ChannelCloseC",
+    "PositionB",
+    "StoreAsThumbDownWhiteC",
+    "AddFriendsB",
+    "MenuM",
+    "Man",
+    "AdFraud",
+    "Service",
+    "StoreChatF",
+    "CapaEditEditWhiteC",
+    "CapaSelectobjectEdit",
+    "Cps2DetailsB",
+    "RandomB",
+    "AlipayF",
+    "CapaCutB",
+    "RankingB",
+    "AmentiesTransportation",
+    "FiltrateB",
+    "RedmojiC",
+    "VideoHomeworkC",
+    "Picture34SB",
+    "FaqMarketingC",
+    "ArrowDownFilledM",
+    "FlashOnSB",
+    "UnfollowB",
+    "FeedbackAd",
+    "Conversation",
+    "RefreshL",
+    "MessageKeyboardB",
+    "EnterpriseStoreC",
+    "NoteSingle",
+    "Picture916B",
+    "VideoAlbumF",
+    "Player",
+    "VideoTv",
+    "CapaSortEdit",
+    "Ar",
+    "NnsArC",
+    "MapPositioningGreyC",
+    "Rspace",
+    "AmentiesSpecial",
+    "DoneF",
+    "AmentiesScene",
+    "CapaEditSliderFlashWhiteC",
+    "HistoryB",
+    "ChatCreateorderF",
+    "ExclamationMarksB",
+    "FaqOperationC",
+    "FollowSortB",
+    "Port",
+    "Guidance",
+    "CapaLiveMomentsRedC",
+    "BrandS",
+    "MusicSB",
+    "ShareMomentsC",
+    "MessageExpressionWhiteStrokeCD",
+    "CapaEditSliderInsertLeftC",
+    "UndoneCircle",
+    "MessageMenu",
+    "CreatorLiveC",
+    "Share",
+    "StoreDetailReduceGreyDisableC",
+    "LinkB",
+    "SpeedB",
+    "Creator",
+    "MiniAppB",
+    "AdministratorCancelWhiteStrokeCD",
+    "Calendar",
+    "WalletB",
+    "CapaPublishDraftsGreyCD",
+    "ChatroomOrderC",
+    "StoreDetailAddGreyDisableC",
+    "StoreChatB",
+    "SoundOnSB",
+    "StoreLogOrderWhiteStrokeCD",
+    "ArrowDownM",
+    "TagSB",
+    "Filter",
+    "StoreDetailCustomsF",
+    "BanAuthor",
+    "CapaEditEffectInsertLeftC",
+    "ChatGroupCircleDeleteCD",
+    "StoreLogAirportSlantWhiteStrokeC",
+    "Gift",
+    "NoteTagC",
+    "Warning",
+    "WidgetF",
+    "Voice",
+    "ArF",
+    "AmentiesConvenient",
+    "CapaEditBeautyChangbiC",
+    "CapaLiveQqSpaceRedC",
+    "CapaPause",
+    "InspirationB",
+    "CapaArrangementEdit",
+    "CapaEditPlayWhiteC",
+    "Mike",
+    "OrderB",
+    "SoundOffBlackC",
+    "CapaEditSliderGlareWhiteC",
+    "ProductPeopleC",
+    "ProductFireC",
+    "Store",
+    "OriginatorGoodsC",
+    "EnterpriseTagC",
+    "SketchCollected",
+    "StoreLogSettingsRedC",
+    "TopicF",
+    "DeleteB",
+    "Edit",
+    "WarningB",
+    "CapaEditSliderInsertUpC",
+    "Video",
+    "CapaEditEffectOriginalC",
+    "AscendingM",
+    "BookF",
+    "ContactBlueCD",
+    "FaqMoreHorizC",
+    "CapaLiveMomentsBlackC",
+    "WeiboCircleF",
+    "DownloadB",
+    "Genuine",
+    "StoreLogPortWhiteStrokeC",
+    "TaskReimbursementB",
+    "ActivityF",
+    "GenuineIdentificationRedCD",
+    "CapaEditSaturationC",
+    "RouteF",
+    "ThumbDown",
+    "CollectS",
+    "CellphoneF",
+    "StoreLogServiceGreyCD",
+    "AirportSlant",
+    "ChatF",
+    "CapaEditMuteC",
+    "CloseB",
+    "CapaAddSectionC",
+    "FansPersonaB",
+    "BookC",
+    "VideotabNiceC",
+    "Like",
+    "FitM",
+    "MutualCorrelationB",
+    "DanmakuOff",
+    "ShareSB",
+    "VideoAlbumC",
+    "ServiceC",
+    "FansF",
+    "MoreSendF",
+    "MinusF",
+    "VideotabCollectC",
+    "CapaEditSeverC",
+    "VideoLocationC",
+    "ArrowDownDownB",
+    "CapaEditBeautyPlaceholderC",
+    "HeartXhxF",
+    "SortB",
+    "ViewClosed",
+    "PictureF",
+    "TransshipmentB",
+    "CapaLiveLikeC",
+    "DanmakuSetting",
+    "BundleB",
+    "FansC",
+    "CouponSlant",
+    "CapaLiveKickOutWhiteStrokeC",
+    "Delete",
+    "ChatGroupCircleAddCD",
+    "Miniprogram",
+    "LikeSB",
+    "AnnouncementC",
+    "CapaEditBeautyPingguojiC",
+    "StoreDetailAirportSlantRedC",
+    "StoreDetailEarthF",
+    "ArrowRightCenterM",
+    "Phone",
+    "CartB",
+    "StoreAsThumbUpWhiteCD",
+    "StoreDetailOverseasRedC",
+    "StoreLogTransshipmentRedC",
+    "CapaOpacityEdit",
+    "AmentiesBeverage",
+    "FaqNoteC",
+    "PictureSB",
+    "Countdown7sSB",
+    "ArrowDownDoubleB",
+    "CapaEditLightC",
+    "ShopCircleF",
+    "AmentiesShower",
+    "StoreLogGreyCD",
+    "CapaEditEffectTransitionC",
+    "QrCodeB",
+    "Scan",
+    "VideotabNicedC",
+    "OverseasLogisticsF",
+    "IndicatorMusicFillBlackC",
+    "CapaLiveGiftC",
+    "PrivateF",
+    "Collect",
+    "ConventionB",
+    "Goods",
+    "CapaLiveDiamondC",
+    "VideoChatC",
+    "MovieF",
+    "CapaLiveWeiboRedC",
+    "CapaExposureB",
+    "TopPicksF",
+    "ThumbDownF",
+    "WidgetB",
+    "IcloudSB",
+    "ChatManagementC",
+    "StoreLogSettingWhiteStrokeC",
+    "QuestionnaireB",
+    "XianchangB",
+    "HomeB",
+    "BanTopic",
+    "GenuineMemberCardC",
+    "WarehouseDelivery",
+    "ScreenNormalSB",
+    "LocationF",
+    "CompensateB",
+    "MenuSB",
+    "Remix",
+    "StoreLogGoodsUnclaimedWhiteStrokeC",
+    "Picture916SB",
+    "MessageLikedC",
+    "CapaEditSmartB",
+    "SearchNewC",
+    "EnterpriseModuleC",
+    "MessageCommentC",
+    "CollectionTodoB",
+    "MutualCorrelation",
+    "CapaEditBeautyShortFaceC",
+    "GriddingB",
+    "LiveMoreS",
+    "LocationBig",
+    "DownF",
+    "AdHighQuality",
+    "CapaEditEffectPushC",
+    "OrderF",
+    "CancelM",
+    "VideoCollectionB",
+    "ChannelCloseCD",
+    "CompilationsC",
+    "FlashOffSB",
+    "EnterpriseNoteC",
+    "CapaEditBeautyLiangyanC",
+    "ShareNew",
+    "CpsDetails",
+    "CheckCircleChatC",
+    "StoreLogUnclaimedGoodsRedC",
+    "CustomsDeclaration",
+    "StickerB",
+    "UnlockB",
+    "CollaborateF",
+    "MessageKeyboardWhiteStrokeCD",
+    "CheckCircleC",
+    "ArrowBack",
+    "ComplaintB",
+    "CapaAnimationEdit"
+  ];
+  function getNodeProperties(node) {
+    const obj = {};
+    const keys = ["x", "y", "width", "height"];
+    keys.forEach((key) => {
+      obj[key] = (node == null ? void 0 : node[key]) || void 0;
+    });
+    return removeEmptyFields(obj);
+  }
+  function getPaddingStyle(node) {
+    var _a, _b, _c, _d;
+    const pl = ((_a = node == null ? void 0 : node.inferredAutoLayout) == null ? void 0 : _a.paddingLeft) || void 0;
+    const pr = ((_b = node == null ? void 0 : node.inferredAutoLayout) == null ? void 0 : _b.paddingRight) || void 0;
+    const pt = ((_c = node == null ? void 0 : node.inferredAutoLayout) == null ? void 0 : _c.paddingTop) || void 0;
+    const pb = ((_d = node == null ? void 0 : node.inferredAutoLayout) == null ? void 0 : _d.paddingBottom) || void 0;
+    let ph = void 0;
+    let pv = void 0;
+    if (pl === pr) {
+      ph = pl;
+    }
+    if (pt === pb) {
+      pv = pt;
+    }
+    if (ph === pv && ph !== void 0 && ph !== 0) {
+      return {
+        padding: ph
+      };
+    }
+    return removeEmptyFields({
+      paddingLeft: ph ? void 0 : pl,
+      paddingRight: ph ? void 0 : pr,
+      paddingTop: pv ? void 0 : pt,
+      paddingBottom: pv ? void 0 : pb,
+      paddingHorizontal: ph,
+      paddingVertical: pv
+    });
+  }
+  function getBorderRadiusStyle(node) {
+    const tl = node.topLeftRadius || void 0;
+    const tr = node.topRightRadius || void 0;
+    const bl = node.bottomLeftRadius || void 0;
+    const br = node.bottomRightRadius || void 0;
+    const isSame = tl === tr && tl === bl && tl === br;
+    return removeEmptyFields({
+      borderTopLeftRadius: isSame ? void 0 : tl,
+      borderTopRightRadius: isSame ? void 0 : tr,
+      borderBottomLeftRadius: isSame ? void 0 : bl,
+      borderBottomRightRadius: isSame ? void 0 : br,
+      borderRadius: isSame ? tl : void 0
+    });
+  }
+  async function getTextStyle(node) {
+    var _a, _b, _c;
+    const variables = node == null ? void 0 : node.inferredVariables;
+    const font = (variables == null ? void 0 : variables.fontSize) || (variables == null ? void 0 : variables.lineHeight) || [];
+    const color = (variables == null ? void 0 : variables.fills) || [];
+    console.log("color=====", color);
+    const fontToken = ((_a = font == null ? void 0 : font[0]) == null ? void 0 : _a.id) || "";
+    const colorToken = ((_c = (_b = color == null ? void 0 : color[0]) == null ? void 0 : _b[0]) == null ? void 0 : _c.id) || "";
+    const fontTokenValue = await figma.variables.getVariableByIdAsync(fontToken);
+    const colorTokenValue = await figma.variables.getVariableByIdAsync(colorToken);
+    return {
+      font: fontTokenValue == null ? void 0 : fontTokenValue.name,
+      color: colorTokenValue == null ? void 0 : colorTokenValue.name
+    };
+  }
+  function rgbToHex(r, g, b) {
+    const toHex = (value) => {
+      const hex = Math.round(value * 255).toString(16);
+      return hex.length === 1 ? "0" + hex : hex;
+    };
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+  }
+  function getBorderStyle(node) {
+    var _a;
+    const bt = node.strokeTopWeight || void 0;
+    const bb = node.strokeBottomWeight || void 0;
+    const bl = node.strokeLeftWeight || void 0;
+    const br = node.strokeRightWeight || void 0;
+    const isSame = bt === bb && bb === bl && bl === br;
+    const stroke = (_a = node.strokes) == null ? void 0 : _a[0];
+    let color = void 0;
+    if (stroke && (stroke == null ? void 0 : stroke.type) === "SOLID") {
+      const strokeColor = stroke.color;
+      color = rgbToHex(strokeColor.r, strokeColor.g, strokeColor.b);
+    }
+    if (!color) return {};
+    if (isSame) {
+      return {
+        borderWidth: bt,
+        borderColor: color
+      };
+    }
+    return removeEmptyFields({
+      borderTopWidth: bt,
+      borderBottomWidth: bb,
+      borderLeftWidth: bl,
+      borderRightWidth: br,
+      borderColor: color
+    });
+  }
+  function checkNodeIsAsset(node) {
+    if (node.isAsset) return true;
+    if ("children" in node && node.children.length > 1) return false;
+    if ("children" in node && node.children.length === 1) {
+      const child = node.children[0];
+      return checkNodeIsAsset(child);
+    }
+    return false;
+  }
+  async function getAssetPreview(node) {
+    try {
+      const bytes = await node.exportAsync({
+        format: "PNG",
+        constraint: {
+          type: "SCALE",
+          value: 3
+        }
+      });
+      return bytes;
+    } catch (err) {
+      console.error("导出图标预览失败:", err);
+      return void 0;
+    }
+  }
+  function checkNodeIsIcon(name) {
+    let realName = name;
+    if (name.startsWith("icon/") || name.startsWith("Icon/") || name.startsWith("ICON/") || name.startsWith("icon-") || name.startsWith("Icon-") || name.startsWith("ICON-") || name.startsWith("icon_") || name.startsWith("Icon_") || name.startsWith("ICON_")) {
+      realName = name.slice(5);
+    }
+    if (!/^[a-zA-Z]+(?:_[a-zA-Z]+)*$/.test(realName)) {
+      return {
+        isIcon: false,
+        name: ""
+      };
+    }
+    const words = realName.split("_");
+    const pascalCase = words.map((word) => {
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    }).join("");
+    if (ICON_NAME_LIST.includes(pascalCase)) {
+      return {
+        isIcon: true,
+        name: pascalCase
+      };
+    }
+    return {
+      isIcon: false,
+      name: ""
+    };
+  }
+  function isNodeVisible(node) {
+    if (!node.visible) {
+      return false;
+    }
+    const hasDimensions = node.width > 0 && node.height > 0;
+    const hasStroke = () => {
+      if ("strokeWeight" in node) {
+        if (typeof node.strokeWeight === "number") {
+          return node.strokeWeight > 0;
+        } else if (Array.isArray(node.strokeWeight)) {
+          return node.strokeWeight.some((weight) => weight > 0);
+        }
+      }
+      return false;
+    };
+    if (hasDimensions || hasStroke()) {
+      return true;
+    }
+    if ("children" in node && node.children && node.children.length > 0) {
+      for (const child of node.children) {
+        if (isNodeVisible(child)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+  function isNodeHasSpecialName(name) {
+    const SPECIAL_NAME_LIST = [
+      "StatusBar",
+      "SafeAreaView",
+      "Status Bar",
+      "Indicator",
+      "indicator"
+    ];
+    return SPECIAL_NAME_LIST.some((item) => {
+      return name.includes(item);
+    });
+  }
+  const ROOT_NODE_SIZE = {
+    height: 0
+  };
+  const MATERIAL_INFO = {
+    icons: [],
+    images: []
+  };
+  function figmaAutoLayoutToRNStyle(params) {
+    if (!params) {
+      return {};
+    }
+    const styles = {};
+    if (params.layoutMode === "HORIZONTAL") {
+      styles.flexDirection = "row";
+    } else if (params.layoutMode === "VERTICAL") {
+      styles.flexDirection = "column";
+    }
+    styles.paddingLeft = params.paddingLeft;
+    styles.paddingRight = params.paddingRight;
+    styles.paddingTop = params.paddingTop;
+    styles.paddingBottom = params.paddingBottom;
+    if (params.layoutMode === "HORIZONTAL") {
+      if (params.primaryAxisSizingMode === "AUTO") {
+        styles.width = void 0;
+      } else {
+        styles.width = "100%";
+      }
+      if (params.counterAxisSizingMode === "AUTO") {
+        styles.height = void 0;
+      } else {
+        styles.height = "100%";
+      }
+    } else if (params.layoutMode === "VERTICAL") {
+      if (params.primaryAxisSizingMode === "AUTO") {
+        styles.height = void 0;
+      } else {
+        styles.height = "100%";
+      }
+      if (params.counterAxisSizingMode === "AUTO") {
+        styles.width = void 0;
+      } else {
+        styles.width = "100%";
+      }
+    }
+    const justifyContentMap = {
+      "MIN": "flex-start",
+      "CENTER": "center",
+      "MAX": "flex-end",
+      "SPACE_BETWEEN": "space-between"
+    };
+    styles.justifyContent = justifyContentMap[params.primaryAxisAlignItems] || "flex-start";
+    const alignItemsMap = {
+      "MIN": "flex-start",
+      "CENTER": "center",
+      "MAX": "flex-end",
+      "BASELINE": "baseline"
+    };
+    styles.alignItems = alignItemsMap[params.counterAxisAlignItems] || "flex-start";
+    if (params.layoutGrow > 0) {
+      styles.flex = params.layoutGrow;
+    } else {
+      styles.flex = void 0;
+    }
+    if (params.layoutPositioning === "ABSOLUTE") {
+      styles.position = "absolute";
+    }
+    return removeEmptyFields(styles);
+  }
+  function cssObjectToReactNativeStyle(cssObject) {
+    const rnStyle = {};
+    for (const [property, value] of Object.entries(cssObject)) {
+      const rnProperty = property.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
+      switch (rnProperty) {
+        case "fontFamily":
+          rnStyle[rnProperty] = value.replace(/"/g, "");
+          break;
+        case "textAlign":
+        case "fontStyle":
+        case "fontWeight":
+        case "color":
+        case "backgroundColor":
+          rnStyle[rnProperty] = value;
+          break;
+        case "background":
+          rnStyle["backgroundColor"] = value;
+          break;
+        case "fontSize":
+        case "lineHeight":
+        case "borderRadius":
+        case "borderWidth":
+        case "borderTopWidth":
+        case "borderRightWidth":
+        case "borderBottomWidth":
+        case "borderLeftWidth":
+          const numericValue = parseFloat(value);
+          if (!isNaN(numericValue)) {
+            rnStyle[rnProperty] = numericValue;
+          }
+          break;
+        case "margin":
+          parseSpacingShorthand(value, rnStyle, "margin");
+          break;
+        case "marginTop":
+        case "marginRight":
+        case "marginBottom":
+        case "marginLeft":
+          rnStyle[rnProperty] = parseNumericValue(value);
+          break;
+        case "padding":
+          parseSpacingShorthand(value, rnStyle, "padding");
+          break;
+        case "paddingTop":
+        case "paddingRight":
+        case "paddingBottom":
+        case "paddingLeft":
+          rnStyle[rnProperty] = parseNumericValue(value);
+          break;
+        case "border":
+          parseBorderShorthand(value, rnStyle);
+          break;
+        case "borderTop":
+          parseBorderDirectionShorthand(value, rnStyle, "Top");
+          break;
+        case "borderRight":
+          parseBorderDirectionShorthand(value, rnStyle, "Right");
+          break;
+        case "borderBottom":
+          parseBorderDirectionShorthand(value, rnStyle, "Bottom");
+          break;
+        case "borderLeft":
+          parseBorderDirectionShorthand(value, rnStyle, "Left");
+          break;
+        case "borderColor":
+        case "borderTopColor":
+        case "borderRightColor":
+        case "borderBottomColor":
+        case "borderLeftColor":
+          rnStyle[rnProperty] = value;
+          break;
+        case "borderStyle":
+        case "borderTopStyle":
+        case "borderRightStyle":
+        case "borderBottomStyle":
+        case "borderLeftStyle":
+          if (["solid", "dotted", "dashed"].includes(value)) {
+            rnStyle[rnProperty] = value;
+          }
+          break;
+        case "gap":
+        case "flexShrink":
+        case "flex":
+        case "width":
+        case "height":
+          rnStyle[rnProperty] = parseNumericValue(value);
+          break;
+        default:
+          rnStyle[rnProperty] = value.replace(/px(\s|$)/g, "").split("/*")[0].trim();
+      }
+    }
+    rnStyle == null ? true : delete rnStyle["display"];
+    return rnStyle;
+  }
+  function parseBorderShorthand(borderValue, targetStyle) {
+    const parts = borderValue.split(" ");
+    const widthMatch = parts.find((part) => /^\d+(\.\d+)?(px|em|rem)?$/.test(part));
+    if (widthMatch) {
+      const width = parseFloat(widthMatch);
+      if (!isNaN(width)) {
+        targetStyle.borderWidth = width;
+      }
+    }
+    const styleMatch = parts.find(
+      (part) => ["solid", "dotted", "dashed", "none"].includes(part)
+    );
+    if (styleMatch) {
+      targetStyle.borderStyle = styleMatch;
+    }
+    const colorMatch = parts.find(
+      (part) => part.startsWith("#") || part.startsWith("rgb") || part.startsWith("rgba") || part.startsWith("hsl") || [
+        "black",
+        "white",
+        "red",
+        "green",
+        "blue"
+        /* other color names */
+      ].includes(part)
+    );
+    if (colorMatch) {
+      targetStyle.borderColor = colorMatch;
+    }
+  }
+  function parseBorderDirectionShorthand(borderValue, targetStyle, direction) {
+    const parts = borderValue.split(" ");
+    const widthMatch = parts.find((part) => /^\d+(\.\d+)?(px|em|rem)?$/.test(part));
+    if (widthMatch) {
+      const width = parseFloat(widthMatch);
+      if (!isNaN(width)) {
+        targetStyle[`border${direction}Width`] = width;
+      }
+    }
+    const styleMatch = parts.find(
+      (part) => ["solid", "dotted", "dashed", "none"].includes(part)
+    );
+    if (styleMatch && ["solid", "dotted", "dashed"].includes(styleMatch)) {
+      targetStyle.borderStyle = styleMatch;
+    }
+    const colorMatch = parts.find(
+      (part) => part.startsWith("#") || part.startsWith("rgb") || part.startsWith("rgba") || part.startsWith("hsl") || [
+        "black",
+        "white",
+        "red",
+        "green",
+        "blue"
+        /* other color names */
+      ].includes(part)
+    );
+    if (colorMatch) {
+      targetStyle[`border${direction}Color`] = colorMatch;
+    }
+  }
+  function parseNumericValue(value) {
+    const cleanValue = value.split("/*")[0].trim();
+    const numericMatch = cleanValue.match(/^(\d+(\.\d+)?)/);
+    return numericMatch ? parseFloat(numericMatch[1]) : 0;
+  }
+  function parseSpacingShorthand(value, targetStyle, property) {
+    const cleanValue = value.split("/*")[0].trim();
+    const parts = cleanValue.split(/\s+/).map((part) => parseNumericValue(part));
+    switch (parts.length) {
+      case 1:
+        targetStyle[`${property}Top`] = parts[0];
+        targetStyle[`${property}Right`] = parts[0];
+        targetStyle[`${property}Bottom`] = parts[0];
+        targetStyle[`${property}Left`] = parts[0];
+        break;
+      case 2:
+        targetStyle[`${property}Top`] = parts[0];
+        targetStyle[`${property}Bottom`] = parts[0];
+        targetStyle[`${property}Right`] = parts[1];
+        targetStyle[`${property}Left`] = parts[1];
+        break;
+      case 3:
+        targetStyle[`${property}Top`] = parts[0];
+        targetStyle[`${property}Right`] = parts[1];
+        targetStyle[`${property}Left`] = parts[1];
+        targetStyle[`${property}Bottom`] = parts[2];
+        break;
+      case 4:
+        targetStyle[`${property}Top`] = parts[0];
+        targetStyle[`${property}Right`] = parts[1];
+        targetStyle[`${property}Bottom`] = parts[2];
+        targetStyle[`${property}Left`] = parts[3];
+        break;
+    }
+  }
+  const EMPTY_RESPONSE = {
+    components: [],
+    icons: [],
+    images: []
+  };
+  const generateComponentInfoRecursively = async (rootNode, y) => {
+    var _a, _b, _c;
+    const components = [];
+    let rootY = 0;
+    if (ROOT_NODE_SIZE.height) {
+      rootY += rootNode.y;
+      rootY += y || 0;
+    }
+    if (!ROOT_NODE_SIZE.height) {
+      ROOT_NODE_SIZE.height = rootNode.height;
+    }
+    if (!rootNode.visible) return EMPTY_RESPONSE;
+    if (!("children" in rootNode) || ((_a = rootNode.children) == null ? void 0 : _a.length) === 0) return EMPTY_RESPONSE;
+    for (const tempNode of rootNode.children) {
+      let node = tempNode;
+      if (isNodeHasSpecialName(node.name)) continue;
+      if ("children" in node && node.children.length === 0) continue;
+      const isVisible = isNodeVisible(node);
+      if (!isVisible) continue;
+      if ("y" in node && (node.y + rootY > ROOT_NODE_SIZE.height || node.y < 0))
+        continue;
+      const css = await node.getCSSAsync();
+      const finalCss = cssObjectToReactNativeStyle(css);
+      let componentStyle = finalCss;
+      let componentProps = {};
+      let componentName = "Stack";
+      let newComponent = {
+        name: componentName,
+        label: node.name,
+        id: node.id,
+        children: [],
+        rect: getNodeProperties(node)
+      };
+      if (node.type === "FRAME" || node.type === "COMPONENT" || node.type === "INSTANCE") {
+        const paddingStyle = getPaddingStyle(node);
+        const borderRadiusStyle = getBorderRadiusStyle(node);
+        const borderStyle = getBorderStyle(node);
+        const layoutStyle = figmaAutoLayoutToRNStyle(node.inferredAutoLayout);
+        componentStyle = Object.assign(
+          borderRadiusStyle,
+          paddingStyle,
+          borderStyle,
+          layoutStyle,
+          componentStyle
+        );
+      }
+      if (node.type === "BOOLEAN_OPERATION") ;
+      if (node.type === "INSTANCE") ;
+      if (node.type === "RECTANGLE") {
+        componentStyle = Object.assign(componentStyle, finalCss);
+      }
+      if (node.type === "GROUP") {
+        componentStyle = Object.assign(componentStyle, {
+          width: node.width,
+          height: node.height
+        });
+      }
+      if (node.type === "LINE") {
+        componentStyle = Object.assign(componentStyle, {
+          width: node.width || node.strokeWeight,
+          height: node.height || node.strokeWeight,
+          rotation: node.rotation === 0 ? void 0 : node.rotation
+        });
+      }
+      const isAsset = checkNodeIsAsset(node);
+      if (isAsset) {
+        const { isIcon, name } = checkNodeIsIcon(node.name);
+        if (!isIcon) {
+          newComponent = Object.assign(newComponent, {
+            isAsset,
+            name: "Image"
+            // 静态资源图片
+          });
+        }
+        const bytes = await getAssetPreview(node);
+        if (isIcon) {
+          MATERIAL_INFO.icons.push({
+            label: name,
+            name: node.name,
+            id: node.id,
+            bytes
+          });
+          newComponent = Object.assign(newComponent, {
+            isIcon,
+            name: "Icon"
+          });
+        } else {
+          MATERIAL_INFO.images.push({
+            label: name,
+            name: node.name,
+            id: node.id,
+            bytes
+          });
+        }
+      }
+      if (node.type === "TEXT") {
+        const textToken = await getTextStyle(node);
+        componentStyle = Object.assign(componentStyle, finalCss);
+        componentProps = Object.assign(componentProps, {
+          content: (node == null ? void 0 : node.characters) || ""
+        }, textToken || {});
+        newComponent = Object.assign(newComponent, {
+          name: "Text"
+        });
+      }
+      const isStaticComponent = STATIC_COMPONENT_MAP == null ? void 0 : STATIC_COMPONENT_MAP[node.name];
+      if ("children" in node && (node.type === "FRAME" || node.type === "COMPONENT" || node.type === "INSTANCE" || node.type === "GROUP") && !isAsset) {
+        if (!isStaticComponent) {
+          const childInfo = await generateComponentInfoRecursively(node, rootY);
+          newComponent.children = (childInfo == null ? void 0 : childInfo.components) || [];
+        }
+      }
+      if ("children" in node && ((_b = node == null ? void 0 : node.children) == null ? void 0 : _b.length) > 0 && ((_c = newComponent.children) == null ? void 0 : _c.length) === 0 && !isAsset && !isStaticComponent)
+        continue;
+      let finalComponent = Object.assign(newComponent, {
+        style: removeEmptyFields(componentStyle),
+        props: removeEmptyFields(componentProps)
+      });
+      components.push(removeEmptyFields(finalComponent));
+    }
+    return {
+      components,
+      icons: MATERIAL_INFO.icons,
+      images: MATERIAL_INFO.images
+    };
+  };
+  async function generateComponentDsl(layoutMode, id) {
+    var _a;
+    const node = await figma.getNodeByIdAsync(id);
+    if (!node) return;
+    let dsl = {
+      style: {},
+      components: []
+    };
+    let icons = [];
+    let images = [];
+    console.log("node====", node);
+    const containerCss = await node.getCSSAsync();
+    if (node.type === "FRAME" || node.type === "COMPONENT" || node.type === "INSTANCE") {
+      const { components, icons: iconList, images: imageList } = await generateComponentInfoRecursively(node);
+      dsl.components = components;
+      icons = iconList;
+      images = imageList;
+      let width = void 0;
+      let height = void 0;
+      if (layoutMode === "auto") {
+        width = node.primaryAxisSizingMode === "AUTO" ? void 0 : node.width;
+        height = node.counterAxisSizingMode === "AUTO" ? void 0 : node.height;
+      } else if (layoutMode === "allFixed") {
+        width = node.width;
+        height = node.height;
+      } else if (layoutMode === "widthFixed") {
+        width = node.width;
+      } else if (layoutMode === "heightFixed") {
+        height = node.height;
+      }
+      dsl.style = Object.assign(
+        getPaddingStyle(node),
+        getBorderStyle(node),
+        getBorderRadiusStyle(node),
+        {
+          flexDirection: node.layoutMode === "HORIZONTAL" ? "row" : "column",
+          backgroundColor: (containerCss == null ? void 0 : containerCss.backgroundColor) || (containerCss == null ? void 0 : containerCss.background) || void 0,
+          width,
+          height,
+          alignItems: (containerCss == null ? void 0 : containerCss["align-items"]) || void 0,
+          justifyContent: (containerCss == null ? void 0 : containerCss["justify-content"]) || void 0,
+          gap: Number(((_a = containerCss == null ? void 0 : containerCss.gap) == null ? void 0 : _a.replace("px", "")) || 0) || void 0
+        }
+      );
+    }
+    figma.ui.postMessage({
+      type: "generate-dsl",
+      payload: {
+        dsl,
+        icons,
+        images
+      }
+    });
+  }
+  async function generatePageDsl(id) {
+    const node = await figma.getNodeByIdAsync(id);
+    if (!node) return;
+    let dsl = {
+      style: {},
+      components: []
+    };
+    let icons = [];
+    let images = [];
+    console.log("node====", node.name, node);
+    const containerCss = await node.getCSSAsync();
+    if (node.type === "FRAME" || node.type === "COMPONENT" || node.type === "INSTANCE") {
+      const { components, icons: iconList, images: imageList } = await generateComponentInfoRecursively(node);
+      dsl.components = components;
+      icons = iconList;
+      images = imageList;
+      const layoutStyle = figmaAutoLayoutToRNStyle(node.inferredAutoLayout);
+      dsl.style = Object.assign(
+        {
+          backgroundColor: (containerCss == null ? void 0 : containerCss.backgroundColor) || (containerCss == null ? void 0 : containerCss.background) || "transparent",
+          flex: 1
+          // 页面根节点
+        },
+        layoutStyle,
+        getPaddingStyle(node)
+      );
+    }
+    figma.ui.postMessage({ type: "generate-dsl", payload: { dsl, icons, images } });
+  }
+  async function generateDSL(mode, layoutMode, id) {
+    ROOT_NODE_SIZE.height = 0;
+    MATERIAL_INFO.icons = [];
+    MATERIAL_INFO.images = [];
+    if (!id) return;
+    if (mode === "component") {
+      generateComponentDsl(layoutMode, id);
+    } else if (mode === "page") {
+      generatePageDsl(id);
+    }
+  }
+  async function getCurrentSelectionNode() {
+    const selection = figma.currentPage.selection;
+    if (selection.length > 0) {
+      const list = [];
+      for (const node of selection) {
+        if (node.type === "FRAME" || node.type === "GROUP" || node.type === "COMPONENT" || node.type === "INSTANCE") {
+          const image = await node.exportAsync({
+            format: "PNG",
+            constraint: { type: "SCALE", value: 3 }
+          });
+          list.push({
+            image: new Uint8Array(image),
+            name: node.name,
+            id: node.id
+          });
+        }
+      }
+      figma.ui.postMessage({
+        type: "selection-update",
+        hasSelection: selection.length > 0,
+        list
+      });
+    }
+  }
+  async function selectNodeById(id) {
+    if (!id) return;
+    const node = await figma.getNodeByIdAsync(id);
+    if (node) {
+      figma.currentPage.selection = [node];
+      figma.viewport.scrollAndZoomIntoView([node]);
+    }
+  }
+  const openTargetUrl = (url) => {
+    if (!url) return;
+    figma.openExternal(url);
+  };
+  function setStorageAsync(key, value) {
+    figma.clientStorage.setAsync(key, value).then(() => {
+      figma.ui.postMessage({
+        type: "storage-set",
+        success: true
+      });
+    }).catch(() => {
+      figma.ui.postMessage({
+        type: "storage-set",
+        success: false
+      });
+    });
+  }
+  function getStorageAsync(key) {
+    figma.clientStorage.getAsync(key).then((value) => {
+      figma.ui.postMessage({
+        type: "storage-get",
+        success: true,
+        value
+      });
+    }).catch(() => {
+      figma.ui.postMessage({
+        type: "storage-get",
+        success: false
+      });
+    });
+  }
+  figma.showUI(__html__);
+  figma.ui.onmessage = (msg) => {
+    switch (msg.type) {
+      case "generate-dsl":
+        generateDSL((msg == null ? void 0 : msg.mode) || "component", (msg == null ? void 0 : msg.layoutMode) || "autoFit", (msg == null ? void 0 : msg.id) || "");
+        break;
+      case "open-url":
+        openTargetUrl((msg == null ? void 0 : msg.url) || "");
+        break;
+      case "get-selection":
+        getCurrentSelectionNode();
+        break;
+      case "select-node":
+        selectNodeById((msg == null ? void 0 : msg.id) || "");
+        break;
+      case "set-item":
+        setStorageAsync((msg == null ? void 0 : msg.key) || "", (msg == null ? void 0 : msg.value) || "");
+        break;
+      case "get-item":
+        getStorageAsync((msg == null ? void 0 : msg.key) || "");
+        break;
+    }
+  };
+  figma.on("selectionchange", () => {
+    getCurrentSelectionNode();
+  });
+})();
